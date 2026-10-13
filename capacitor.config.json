@@ -1,0 +1,7 @@
+{
+  "appId": "com.sinyaflix.vod",
+  "appName": "SinyaFlix",
+  "webDir": "www",
+  "server": { "androidScheme": "http", "cleartext": true },
+  "plugins": { "CapacitorHttp": { "enabled": true } }
+}

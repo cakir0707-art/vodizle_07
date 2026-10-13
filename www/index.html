@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="tr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SinyaFlix — VOD</title>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1"></script>
+<style>
+:root{--bg:#141414;--p:#1f1f1f;--r:#e50914;--d:#9a9a9a}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:#f3f3f3;font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;min-height:100vh}
+[hidden]{display:none!important}
+button{font:inherit;cursor:pointer;border:0;color:inherit;background:none}
+::-webkit-scrollbar{display:none}
+small{color:var(--d);font-weight:400;font-size:12px}
+.pad{padding:18px 24px;color:var(--d)}
+/* login */
+#login{min-height:100vh;display:grid;place-items:center;padding:20px;background:radial-gradient(ellipse at top,#3a0a0d,#141414 62%)}
+#login form{width:100%;max-width:400px;background:#000c;padding:38px 34px;border-radius:8px}
+.logo{color:var(--r);font-weight:900;letter-spacing:.05em;font-size:28px}
+#login h1{font-size:24px;margin:16px 0 20px}
+.f{width:100%;background:#333;border:0;border-radius:4px;padding:13px;color:#fff;margin-bottom:13px;font:inherit}
+.f:focus{outline:2px solid #fff}
+.go{background:var(--r);padding:11px 22px;border-radius:4px;font-weight:700}
+#login .go{width:100%;padding:14px}.go:disabled{opacity:.6}
+.go.w{background:#fff;color:#000}.go.g{background:#6d6d6eb3}
+#msg{font-size:13px;margin-bottom:12px;color:var(--d)}#msg.bad{color:#ff6b6b}
+.note{color:var(--d);font-size:12px;margin-top:14px}
+/* nav */
+nav{position:fixed;top:0;left:0;right:0;z-index:20;display:flex;align-items:center;gap:22px;padding:14px 4%;background:linear-gradient(#000d,transparent);transition:background .3s}
+nav.s{background:var(--bg)}
+nav a{color:#ccc;cursor:pointer;font-weight:600}nav a.on,nav a:hover{color:#fff}
+nav .logo{font-size:22px;margin-right:6px}
+#q{margin-left:auto;background:#000a;border:1px solid #555;border-radius:4px;padding:7px 12px;color:#fff;width:210px;font:inherit}
+#out{color:var(--d)}
+/* hero */
+#hero{position:relative;min-height:64vh;display:flex;align-items:flex-end;padding:0 4% 7%;overflow:hidden}
+#hero .bg{position:absolute;inset:-30px;background-size:cover;background-position:center;filter:blur(26px) brightness(.5)}
+#hero::after{content:"";position:absolute;inset:0;background:linear-gradient(to top,var(--bg),transparent 55%),linear-gradient(to right,#000b,transparent 70%)}
+#hero .in{position:relative;z-index:2;max-width:540px}
+#hero h1{font-size:clamp(26px,4vw,48px);line-height:1.1;margin-bottom:12px}
+#hero p{color:#ddd;margin-bottom:18px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+#hero>img{position:absolute;right:7%;bottom:12%;height:50vh;z-index:2;border-radius:6px;box-shadow:0 12px 40px #000a}
+#hero .in .go{margin-right:8px}
+#hero[hidden]+#rows{padding-top:90px}
+/* rows */
+.row{padding:0 4%;margin-bottom:26px}.row h2,.gh h2{font-size:18px;margin-bottom:8px}
+.rw{position:relative}
+.trk{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x proximity;padding:8px 0}
+.card{position:relative;flex:0 0 150px;aspect-ratio:2/3;background:var(--p);border-radius:4px;overflow:hidden;cursor:pointer;scroll-snap-align:start;transition:transform .2s}
+.card:hover{transform:scale(1.08);z-index:3;box-shadow:0 8px 24px #000}
+.card img{width:100%;height:100%;object-fit:cover;display:block}
+.card b{position:absolute;inset:auto 0 0;padding:26px 8px 8px;font-size:12px;background:linear-gradient(transparent,#000e);opacity:0;transition:.2s}
+.card:hover b,.noimg b{opacity:1}
+.noimg{display:flex;align-items:center;justify-content:center;text-align:center;background:linear-gradient(160deg,#363636,#1a1a1a)}
+.noimg b{position:static;background:none;padding:10px}
+.all{display:flex;align-items:center;justify-content:center;text-align:center;font-weight:700;background:#2a2a2a}
+.ar{position:absolute;top:8px;bottom:8px;width:42px;z-index:5;background:#000a;font-size:28px;opacity:0;transition:.2s}
+.ar.l{left:-3.5%}.ar.r{right:-3.5%}.rw:hover .ar{opacity:1}
+@media(hover:none){.ar{display:none}}
+@media(max-width:700px){#hero>img{display:none}.card{flex-basis:112px}#q{width:120px}}
+.gh{padding:90px 4% 10px;display:flex;align-items:center;gap:16px}.gh h2{margin:0}
+.gh button{color:var(--d);font-weight:600}
+.grid{padding:0 4% 40px;display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px}
+.grid .card{flex:none}
+/* modal */
+#modal{position:fixed;inset:0;z-index:40;background:#000b;overflow:auto;display:flex;justify-content:center;padding:4vh 14px}
+#md{background:var(--p);width:100%;max-width:880px;border-radius:8px;position:relative;align-self:flex-start;overflow:hidden}
+.x{position:absolute;top:12px;right:14px;font-size:20px;width:34px;height:34px;border-radius:50%;background:#000a}
+.mh{display:flex;gap:22px;padding:28px}.mh img{width:180px;border-radius:6px;align-self:flex-start}
+.mh h1{font-size:26px;margin-bottom:6px;padding-right:30px}.meta{color:var(--d);margin-bottom:12px}#pl{margin-bottom:16px;color:#ddd}
+.ep{display:flex;gap:14px;align-items:center;padding:14px 22px;border-top:1px solid #333;cursor:pointer}
+.ep:hover{background:#2c2c2c}.ep i{font-style:normal;font-size:20px;color:var(--d);width:30px;text-align:center}
+.ep div{flex:1}.ep b{display:block}.ep small{display:block}
+@media(max-width:600px){.mh{flex-direction:column}.mh img{width:120px}}
+/* player */
+#player{position:fixed;inset:0;z-index:60;background:#000;display:flex;flex-direction:column}
+#player video{flex:1;min-height:0;width:100%}
+.pb{position:absolute;top:0;left:0;right:0;padding:14px 18px;display:flex;align-items:center;gap:14px;background:linear-gradient(#000c,transparent);z-index:2;pointer-events:none}
+.pb button{pointer-events:auto;font-size:26px}
+#perr{position:absolute;inset:0;margin:auto;height:fit-content;max-width:430px;text-align:center;background:#000d;padding:24px;border-radius:8px;z-index:3}
+#perr .go{margin-top:14px}
+</style></head><body>
+
+<div id="login"><form id="lf">
+  <div class="logo">SİNYAFLİX</div><h1>Giriş Yap</h1>
+  <input class="f" id="srv" placeholder="Sunucu (http://sunucu:port)" required>
+  <input class="f" id="usr" placeholder="Kullanıcı adı" required autocomplete="username">
+  <input class="f" id="pwd" type="password" placeholder="Şifre" required autocomplete="current-password">
+  <div id="msg"></div>
+  <button class="go" id="lb">Giriş Yap</button>
+  <p class="note">Sunucu ve kullanıcı adı bu cihazda hatırlanır, şifre saklanmaz.</p>
+</form></div>
+
+<div id="app" hidden>
+  <nav><span class="logo">SİNYAFLİX</span>
+    <a data-t="movie" class="on">Filmler</a><a data-t="series">Diziler</a>
+    <input id="q" placeholder="Ara…"><button id="out">Çıkış</button></nav>
+  <div id="hero"></div><div id="rows"></div><div id="sent"></div>
+</div>
+
+<div id="modal" hidden><div id="md"></div></div>
+<div id="player" hidden>
+  <div class="pb"><button id="pc">←</button><b id="pt"></b></div>
+  <video id="pv" controls autoplay playsinline></video>
+  <div id="perr" hidden>Oynatılamadı. Dosya biçimi (mkv/HEVC) tarayıcıda desteklenmiyor ya da sunucu erişimi engelliyor olabilir.<br><button class="go" id="cp">Bağlantıyı kopyala (VLC için)</button></div>
+</div>
+
+<script>
+const $=s=>document.querySelector(s),
+norm=s=>(s||'').toLocaleLowerCase('tr').replace(/ı/g,'i').normalize('NFD').replace(/[\u0300-\u036f]/g,''),
+esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])),
+arr=x=>Array.isArray(x)?x:[];
+let S={tab:'movie'},M=new Map(),SR=new Map(),hls,io,queue,tm;
+const cur=()=>S.tab=='movie'?{items:S.vod,cats:S.vcats,map:M}:{items:S.ser,cats:S.scats,map:SR};
+const U=()=>`${S.server}`,cr=()=>`${encodeURIComponent(S.user)}/${encodeURIComponent(S.pass)}`;
+
+async function api(a,x=''){
+  const r=await fetch(`${S.server}/player_api.php?username=${encodeURIComponent(S.user)}&password=${encodeURIComponent(S.pass)}${a?'&action='+a:''}${x}`);
+  if(!r.ok)throw new Error('Sunucu HTTP '+r.status+' döndürdü');
+  return r.json();
+}
+function msg(t,bad){const m=$('#msg');m.textContent=t;m.className=bad?'bad':''}
+
+try{const sv=JSON.parse(localStorage.vod_login||'null');if(sv){$('#srv').value=sv.server;$('#usr').value=sv.user}}catch(e){}
+
+$('#lf').onsubmit=async e=>{
+  e.preventDefault();
+  let sv=$('#srv').value.trim().replace(/\/+$/,'');if(!/^https?:\/\//i.test(sv))sv='http://'+sv;
+  S.server=sv;S.user=$('#usr').value.trim();S.pass=$('#pwd').value;
+  $('#lb').disabled=true;msg('Bağlanılıyor…');
+  try{
+    const a=await api('');
+    if(!a.user_info||+a.user_info.auth!==1)throw new Error('Kullanıcı adı veya şifre hatalı');
+    if(a.user_info.status&&a.user_info.status!=='Active')throw new Error('Hesap durumu: '+a.user_info.status);
+    try{localStorage.vod_login=JSON.stringify({server:sv,user:S.user})}catch(e){}
+    msg('Kütüphane yükleniyor… (büyük listelerde biraz sürebilir)');
+    const [vc,vs,sc,ss]=await Promise.all(['get_vod_categories','get_vod_streams','get_series_categories','get_series'].map(x=>api(x)));
+    S.vcats=arr(vc);S.scats=arr(sc);
+    S.vod=arr(vs).map(x=>({id:x.stream_id,name:x.name||'',n:norm(x.name),img:x.stream_icon,cat:String(x.category_id),ext:x.container_extension||'mp4',rate:x.rating}));
+    S.ser=arr(ss).map(x=>({id:x.series_id,name:x.name||'',n:norm(x.name),img:x.cover,cat:String(x.category_id),plot:x.plot,rate:x.rating,year:(x.releaseDate||x.release_date||'').slice(0,4),genre:x.genre}));
+    M=new Map(S.vod.map(i=>[String(i.id),i]));SR=new Map(S.ser.map(i=>[String(i.id),i]));
+    $('#login').hidden=true;$('#app').hidden=false;home();
+  }catch(x){
+    msg(x instanceof TypeError?'Sunucuya erişilemedi: adres/port yanlış olabilir ya da tarayıcı engelliyor (CORS veya https→http). Sayfayı dosya olarak açıp deneyin.':x.message,1);
+  }
+  $('#lb').disabled=false;
+};
+$('#out').onclick=()=>{$('#app').hidden=true;$('#login').hidden=false;$('#pwd').value='';msg('')};
+
+/* ---- listeleme ---- */
+const card=i=>i.img?`<div class="card" data-id="${i.id}"><img loading="lazy" src="${esc(i.img)}" alt="" onerror="this.parentNode.classList.add('noimg');this.remove()"><b>${esc(i.name)}</b></div>`
+  :`<div class="card noimg" data-id="${i.id}"><b>${esc(i.name)}</b></div>`;
+
+function row(g){
+  const s=document.createElement('section');s.className='row';
+  s.innerHTML=`<h2>${esc(g.n)} <small>${g.l.length}</small></h2><div class="rw"><button class="ar l">‹</button><div class="trk">${g.l.slice(0,40).map(card).join('')}${g.l.length>40?'<div class="card all">Tümü<br>›</div>':''}</div><button class="ar r">›</button></div>`;
+  const t=s.querySelector('.trk');
+  s.querySelector('.all')?.addEventListener('click',()=>grid(g.n,g.l));
+  s.querySelector('.l').onclick=()=>t.scrollBy({left:-t.clientWidth*.8,behavior:'smooth'});
+  s.querySelector('.r').onclick=()=>t.scrollBy({left:t.clientWidth*.8,behavior:'smooth'});
+  return s;
+}
+
+function home(){
+  const {items,cats}=cur(),rows=$('#rows'),by=new Map();
+  items.forEach(i=>{if(!by.has(i.cat))by.set(i.cat,[]);by.get(i.cat).push(i)});
+  const gs=cats.map(c=>({n:c.category_name,l:by.get(String(c.category_id))||[]})).filter(g=>g.l.length);
+  const known=new Set(cats.map(c=>String(c.category_id))),oth=items.filter(i=>!known.has(i.cat));
+  if(oth.length)gs.push({n:'Diğer',l:oth});
+  hero(items);rows.innerHTML='';io&&io.disconnect();
+  if(!gs.length){rows.innerHTML='<p class="pad">Bu kütüphanede içerik bulunamadı.</p>';return}
+  let n=0;
+  const more=()=>{gs.slice(n,n+5).forEach(g=>rows.append(row(g)));n+=5;if(n<gs.length)io.observe($('#sent'))};
+  io=new IntersectionObserver(e=>{if(e[0].isIntersecting){io.disconnect();more()}},{rootMargin:'800px'});
+  more();
+}
+
+function grid(t,l){
+  $('#hero').hidden=true;io&&io.disconnect();
+  $('#rows').innerHTML=`<div class="gh"><button id="bk">← Geri</button><h2>${esc(t)} <small>${l.length}</small></h2></div><div class="grid">${l.slice(0,300).map(card).join('')}</div>`;
+  $('#bk').onclick=()=>{$('#q').value='';home()};scrollTo(0,0);
+}
+
+function hero(items){
+  const h=$('#hero'),ok=items.filter(i=>i.img),good=ok.filter(i=>+i.rate>6),p=good.length?good:ok;
+  if(!p.length){h.hidden=true;return}
+  const i=p[Math.random()*p.length|0];h.hidden=false;
+  h.innerHTML=`<div class="bg"></div><img src="${esc(i.img)}" alt=""><div class="in"><h1>${esc(i.name)}</h1><p>${esc((i.plot||'').slice(0,240))}</p><button class="go w" id="hp">▶ ${S.tab=='movie'?'Oynat':'Bölümler'}</button><button class="go g" id="hi">ℹ Bilgi</button></div>`;
+  h.querySelector('.bg').style.backgroundImage=`url("${i.img}")`;
+  $('#hp').onclick=()=>S.tab=='movie'?playMovie(i):openItem(i);$('#hi').onclick=()=>openItem(i);
+}
+
+document.querySelectorAll('nav a').forEach(a=>a.onclick=()=>{
+  S.tab=a.dataset.t;document.querySelectorAll('nav a').forEach(x=>x.classList.toggle('on',x==a));$('#q').value='';home();scrollTo(0,0);
+});
+$('#q').oninput=e=>{clearTimeout(tm);tm=setTimeout(()=>{
+  const v=e.target.value.trim(),q=norm(v);if(!q)return home();
+  grid('Arama: '+v,cur().items.filter(i=>i.n.includes(q)));
+},250)};
+$('#rows').onclick=e=>{const c=e.target.closest('.card[data-id]');if(c)openItem(cur().map.get(c.dataset.id))};
+onscroll=()=>$('nav').classList.toggle('s',scrollY>40);
+
+/* ---- detay penceresi: film bilgisi / dizi sezon + bölümler ---- */
+function closeModal(){$('#modal').hidden=true;document.body.style.overflow='';S.mt=null}
+$('#modal').onclick=e=>{if(e.target.id=='modal')closeModal()};
+
+async function openItem(i){
+  if(!i)return;
+  const mv=S.tab=='movie',b=$('#md'),t=S.mt={};
+  $('#modal').hidden=false;document.body.style.overflow='hidden';
+  b.innerHTML=`<button class="x">✕</button><div class="mh">${i.img?`<img src="${esc(i.img)}" alt="">`:''}<div><h1>${esc(i.name)}</h1><p class="meta" id="mt">${[+i.rate?'★ '+i.rate:'',i.year,i.genre].filter(Boolean).map(esc).join(' • ')}</p><p id="pl">${esc(i.plot||'')}</p>${mv?'<button class="go w" id="pm">▶ Oynat</button>':''}</div></div><div id="eps"><p class="pad">Yükleniyor…</p></div>`;
+  b.querySelector('.x').onclick=closeModal;
+  if(mv)$('#pm').onclick=()=>playMovie(i);
+  try{
+    if(mv){
+      const d=await api('get_vod_info','&vod_id='+i.id);if(S.mt!==t)return;
+      const f=d.info||{};
+      $('#pl').textContent=f.plot||f.description||'';
+      $('#mt').textContent=[+f.rating?'★ '+f.rating:'',(f.releasedate||'').slice(0,4),f.duration,f.genre].filter(Boolean).join(' • ');
+      if(d.movie_data&&d.movie_data.container_extension)i.ext=d.movie_data.container_extension;
+      $('#eps').innerHTML='';return;
+    }
+    const d=await api('get_series_info','&series_id='+i.id);if(S.mt!==t)return;
+    const f=d.info||{};if(f.plot)$('#pl').textContent=f.plot;
+    const sn=Object.values(d.episodes||{}).filter(l=>l&&l.length).map((l,k)=>({n:+l[0].season||k+1,l:l.slice().sort((a,b)=>a.episode_num-b.episode_num)})).sort((a,b)=>a.n-b.n);
+    if(!sn.length){$('#eps').innerHTML='<p class="pad">Bu dizi için bölüm bulunamadı.</p>';return}
+    $('#eps').innerHTML=`<div class="pad"><select class="f" id="ss">${sn.map((s,k)=>`<option value="${k}">Sezon ${s.n} · ${s.l.length} bölüm</option>`).join('')}</select></div><div id="el"></div>`;
+    const show=k=>{
+      const s=sn[k];
+      $('#el').innerHTML=s.l.map((e,j)=>`<div class="ep" data-j="${j}"><i>${esc(e.episode_num)}</i><div><b>${esc(e.title||'Bölüm '+e.episode_num)}</b><small>${esc((e.info&&e.info.duration)||'')}</small></div><span>▶</span></div>`).join('');
+      $('#el').onclick=ev=>{const r=ev.target.closest('.ep');if(r)playEp(i,s,+r.dataset.j)};
+    };
+    $('#ss').onchange=e=>show(e.target.value);show(0);
+  }catch(e){if(S.mt===t)$('#eps').innerHTML='<p class="pad">Detaylar alınamadı: '+esc(e.message)+'</p>'}
+}
+
+/* ---- oynatıcı ---- */
+function play(url,t){
+  const v=$('#pv');$('#player').hidden=false;$('#pt').textContent=t;$('#perr').hidden=true;S.cu=url;
+  hls&&hls.destroy();hls=null;
+  if(/\.m3u8(\?|$)/i.test(url)&&window.Hls&&Hls.isSupported()){hls=new Hls();hls.loadSource(url);hls.attachMedia(v)}else v.src=url;
+  v.play().catch(()=>{});
+}
+function stop(){const v=$('#pv');v.pause();v.removeAttribute('src');v.load();hls&&hls.destroy();hls=null;$('#player').hidden=true;queue=null}
+function playMovie(i){queue=null;play(`${U()}/movie/${cr()}/${i.id}.${i.ext}`,i.name)}
+function playEp(sr,s,j){
+  queue={sr,s,j};const e=s.l[j];
+  play(`${U()}/series/${cr()}/${e.id}.${e.container_extension||'mp4'}`,`${sr.name} · Sezon ${s.n} Bölüm ${e.episode_num}`);
+}
+$('#pc').onclick=stop;
+$('#pv').onerror=()=>{$('#perr').hidden=false};
+$('#pv').onended=()=>{if(queue&&queue.j+1<queue.s.l.length)playEp(queue.sr,queue.s,queue.j+1)};
+$('#cp').onclick=()=>navigator.clipboard.writeText(S.cu).then(()=>$('#cp').textContent='Kopyalandı ✓');
+onkeydown=e=>{if(e.key=='Escape'){if(!$('#player').hidden)stop();else closeModal()}};
+</script></body></html>
